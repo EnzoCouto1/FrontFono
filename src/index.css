@@ -1,0 +1,16 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%; /* Garante que body e #root ocupem toda a altura */
+  font-family: sans-serif;
+}
+
+body {
+  background-color: #f0f2f5; /* Apenas a cor de fundo */
+}
