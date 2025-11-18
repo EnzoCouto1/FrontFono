@@ -2,44 +2,62 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './HistoricoPage.css'; // <-- Mude para o novo arquivo CSS
+import './HistoricoPage.css'; // Vamos criar este estilo a seguir
 
 function HistoricoPage() {
   const navigate = useNavigate();
 
-  // Vamos criar dados falsos para a Historico
-  const [appointments, setAppointments] = useState([
-    { id: 1, date: '28 de Outubro, 2025', time: '14:00', patient: 'Carlos Silva (Online)' },
-    { id: 2, date: '30 de Outubro, 2025', time: '10:30', patient: 'Maria Souza (Presencial)' },
-    { id: 3, date: '04 de Novembro, 2025', time: '09:00', patient: 'João Pereira (Online)' },
+  // Dados fictícios do histórico
+  const [history, setHistory] = useState([
+    { 
+      id: 1, 
+      date: '15 de Outubro, 2025', 
+      type: 'Sessão Online', 
+      status: 'Concluída',
+      summary: 'Exercícios de dicção realizados com sucesso.' 
+    },
+    { 
+      id: 2, 
+      date: '01 de Outubro, 2025', 
+      type: 'Avaliação Presencial', 
+      status: 'Concluída',
+      summary: 'Avaliação inicial e planejamento do tratamento.' 
+    },
+    { 
+      id: 3, 
+      date: '20 de Setembro, 2025', 
+      type: 'Sessão Online', 
+      status: 'Cancelada',
+      summary: 'Paciente remarcou por motivos pessoais.' 
+    },
   ]);
 
   return (
-    // Wrapper para o fundo (igual ao do chat)
     <div className="historico-page-wrapper">
-
-      {/* Container transparente para o conteúdo (igual ao do chat) */}
       <div className="historico-container">
-
+        
         <header className="historico-header">
-          <h1>Historico</h1>
+          <h1>Histórico de Consultas</h1>
           <button 
-            className="historico-back-button" 
+            className="back-button" 
             onClick={() => navigate('/chat')}
           >
             Voltar ao Chat
           </button>
         </header>
 
-        <div className="appointment-list">
-          {appointments.map(appt => (
-            <div key={appt.id} className="appointment-card">
-              <div className="appt-datetime">
-                <span className="appt-date">{appt.date}</span>
-                <span className="appt-time">{appt.time}</span>
+        <div className="history-list">
+          {history.map(item => (
+            <div key={item.id} className="history-card">
+              <div className="history-header">
+                <span className="history-date">{item.date}</span>
+                <span className={`history-status ${item.status.toLowerCase()}`}>
+                  {item.status}
+                </span>
               </div>
-              <div className="appt-patient">
-                {appt.patient}
+              <div className="history-details">
+                <strong>{item.type}</strong>
+                <p>{item.summary}</p>
               </div>
             </div>
           ))}

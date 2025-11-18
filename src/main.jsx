@@ -13,30 +13,40 @@ import LoginPage from './pages/LoginPage';
 import ChatPage from './pages/ChatPage';
 import AgendaPage from './pages/AgendaPage';     
 import HistoricoPage from './pages/HistoricoPage';
+import ProfilePage from './pages/ProfilePage';
+import ConfigPage from './pages/ConfigPage';
 
 // Importe o CSS global
 import './index.css';
 
 const router = createBrowserRouter([
   {
-    path: "/", // A URL raiz AGORA MOSTRA A TELA DE BEM-VINDO
+    path: "/", 
     element: <WelcomePage />,
   },
   {
-    path: "/login", // A TELA DE LOGIN AGORA ESTÁ AQUI
+    path: "/login", // 
     element: <LoginPage />,
   },
   {
-    path: "/chat", // O chat continua o mesmo
+    path: "/chat", //
     element: <ChatPage />,
   },
   {
-    path: "/agenda", // <-- VERIFIQUE SE ESTA ROTA EXISTE
+    path: "/agenda", // 
     element: <AgendaPage />,
   },
   {
-    path: "/historico", // <-- VERIFIQUE SE ESTA ROTA EXISTE
+    path: "/historico", // 
     element: <HistoricoPage />,
+  },
+  {
+    path: "/perfil", // 
+    element: <ProfilePage />,
+  },
+  {
+    path: "/config", // 
+    element: <ConfigPage />,
   },
 ]);
 

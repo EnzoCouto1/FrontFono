@@ -1,0 +1,91 @@
+/* Em: src/pages/ConfigPage.css */
+
+/* 1. Estrutura Principal (Padrão do projeto) */
+.config-page-wrapper {
+  width: 100%;
+  height: 100vh;
+  background-image: url('/chat-fundo.jpg');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.config-container {
+  width: 100%;
+  max-width: 550px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 2. Cabeçalho (Reutilizando estilos de outras páginas) */
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.config-header h1 {
+  font-size: 20px;
+  margin: 0;
+  color: #333;
+}
+
+.back-button {
+  padding: 6px 12px;
+  background-color: white;
+  border: 1px solid #6c757d;
+  color: #6c757d;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.back-button:hover {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* 3. Lista de Configurações */
+.settings-list {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed #eee;
+}
+
+.setting-item label {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+.settings-list .status-info {
+  font-size: 13px;
+  color: #888;
+  margin-top: 10px;
+}
+
+/* Estilo para Checkbox (o input padrão) */
+.setting-item input[type="checkbox"] {
+  transform: scale(1.5); /* Aumenta o tamanho do checkbox padrão */
+  cursor: pointer;
+  accent-color: #007bff; /* Munda a cor do checkbox nativo */
+}

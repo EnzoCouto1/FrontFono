@@ -1,65 +1,118 @@
-/* Dentro de src/pages/LoginPage.css */
+/* Em: src/pages/HistoricoPage.css */
 
-.login-page {
+/* 1. Estrutura Principal (Fundo e Container) */
+.historico-page-wrapper {
+  width: 100%;
+  height: 100vh;
+  background-image: url('/chat-fundo.jpg'); /* Mesma imagem do chat */
+  background-size: cover;
+  background-position: center;
+  
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh; /* Ocupa a tela inteira */
-  background-color: #c3eca4;
+  padding: 20px;
 }
 
-.login-container {
-  padding: 40px;
-  background-color: white;
+.historico-container {
+  width: 100%;
+  max-width: 800px;
+  height: 85vh; /* Altura fixa para permitir scroll interno */
+  
+  background-color: rgba(255, 255, 255, 0.85); /* Efeito transparente */
+  border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
+  
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.login-container h1 {
-  margin-bottom: 10px;
-  font-size: 24px;
+/* 2. Cabeçalho */
+.historico-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
 }
 
-.login-container p {
-  margin-bottom: 20px;
-  color: #666;
-}
-
-.login-form .input-group {
-  margin-bottom: 15px;
-  text-align: left;
-}
-
-.login-form label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+.historico-header h1 {
+  font-size: 22px;
   color: #333;
+  margin: 0;
 }
 
-.login-form input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.login-button {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  background-color: #007bff;
-  color: white;
+.back-button {
+  padding: 8px 16px;
+  background-color: white;
+  border: 1px solid #007bff;
+  color: #007bff;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
   font-weight: bold;
-  margin-top: 10px;
+  transition: all 0.2s;
 }
 
-.login-button:hover {
-  background-color: #0056b3;
+.back-button:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+/* 3. Lista e Cartões */
+.history-list {
+  flex-grow: 1;
+  overflow-y: auto; /* Scroll apenas na lista */
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.history-card {
+  background-color: white;
+  border-left: 5px solid #ccc; /* Borda lateral colorida */
+  border-radius: 4px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.history-date {
+  font-weight: bold;
+  color: #555;
+}
+
+/* Estilos para Status (Concluída vs Cancelada) */
+.history-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.history-status.concluída {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.history-status.cancelada {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.history-details p {
+  margin-top: 5px;
+  color: #666;
+  font-size: 14px;
 }
