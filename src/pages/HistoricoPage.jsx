@@ -1,13 +1,10 @@
-// Em: src/pages/HistoricoPage.jsx
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './HistoricoPage.css'; // Vamos criar este estilo a seguir
+import './HistoricoPage.css';
 
 function HistoricoPage() {
   const navigate = useNavigate();
 
-  // Dados fictícios do histórico
   const [history, setHistory] = useState([
     { 
       id: 1, 

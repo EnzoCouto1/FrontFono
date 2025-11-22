@@ -1,5 +1,4 @@
-// Em: src/pages/ChatPage.jsx
-
+import api from '../api/axiosConfig';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ChatPage.css';
@@ -20,7 +19,7 @@ const loadInitialMessages = () => {
 
 function ChatPage() {
   // ESTADO INICIAL: Carrega do Local Storage
-  const [messages, setMessages] = useState(loadInitialMessages); 
+  const [messages, setMessages] = useState(loadInitialMessages);
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [newMessage, setNewMessage] = useState('');
@@ -29,6 +28,7 @@ function ChatPage() {
   const navigate = useNavigate();
   const mediaRecorderRef = useRef(null);
   const messageListRef = useRef(null);
+  const audioChunksRef = useRef([]); // Ref para armazenar os chunks de áudio
 
   // Efeito 1: Salvar a conversa no Local Storage a cada mudança
   useEffect(() => {
@@ -75,35 +75,79 @@ function ChatPage() {
       setIsRecording(false);
     } else {
       try {
-        // Pede permissão e inicia a gravação
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
-        
-        const audioChunks = [];
+        audioChunksRef.current = []; // Limpa os chunks anteriores
+
         mediaRecorder.ondataavailable = (event) => {
-          audioChunks.push(event.data);
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
         };
         
-        mediaRecorder.onstop = () => {
-          // Combina os chunks de áudio em um Blob e salva no estado
-          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        mediaRecorder.onstop = async () => {
+          // 1. Cria o arquivo de áudio (Blob)
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           const audioUrl = URL.createObjectURL(audioBlob);
-          const audioMessage = {
-            id: Date.now(),
+          
+          // Adiciona mensagem de áudio "Enviando..." na tela
+          const tempId = Date.now();
+          setMessages(prev => [...prev, {
+            id: tempId,
             type: 'audio',
             content: audioUrl,
             sender: 'sent',
-            timestamp: new Date()
-          };
-          setMessages(currentMessages => [...currentMessages, audioMessage]);
+            timestamp: new Date(),
+            status: 'analyzing' // Novo status para mostrar loading
+          }]);
+
+          // 2. Prepara o envio para a API (FormData)
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'audio.wav');
+          // Vamos fixar umas palavras para teste por enquanto
+          formData.append('palavrasEsperadas', 'rato, carro, terra'); 
+
+          try {
+            // 3. Chama o Back-end (PronunciationController)
+            const response = await api.post('/api/pronunciation/analyze-batch-deepgram', formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                'Authorization': '' // <--- ISSO ANULA O TOKEN E EVITA O ERRO 500
+              },
+            });
+
+            console.log("Resposta da IA:", response.data);
+
+            // 4. Cria a mensagem de resposta da IA
+            const aiFeedback = {
+              id: Date.now() + 1,
+              type: 'text',
+              sender: 'received',
+              timestamp: new Date(),
+              // Formata o texto bonitinho com a nota. Verifica se as propriedades existem.
+              content: `📊 Análise da IA:\nPontuação Geral: ${response.data.pontuacaoGeral ? response.data.pontuacaoGeral.toFixed(1) : 'N/A'}%\nFeedback: ${response.data.feedbackGeral || 'Sem feedback disponível.'}`
+            };
+
+            setMessages(prev => [...prev, aiFeedback]);
+
+          } catch (err) {
+            console.error("Erro ao analisar áudio:", err);
+            setMessages(prev => [...prev, {
+              id: Date.now() + 2,
+              type: 'text',
+              sender: 'received',
+              content: "Erro ao processar o áudio com a IA. Tente novamente.",
+              timestamp: new Date()
+            }]);
+          }
         };
 
         mediaRecorder.start();
         setIsRecording(true);
       } catch (err) {
-        console.error("Erro ao acessar o microfone:", err);
-        alert("Não foi possível acessar seu microfone. Verifique as permissões do navegador.");
+        console.error("Erro ao acessar microfone:", err);
+        alert("Erro ao acessar microfone. Verifique as permissões do navegador.");
       }
     }
   };
@@ -174,7 +218,7 @@ function ChatPage() {
                 {message.type === 'audio' ? (
                   <audio controls src={message.content}></audio>
                 ) : (
-                  <p>{message.content}</p>
+                  <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p> 
                 )}
                 
                 {/* Timestamp */}
