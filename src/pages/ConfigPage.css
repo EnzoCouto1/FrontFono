@@ -1,91 +1,238 @@
-/* Em: src/pages/ConfigPage.css */
+/* Em: src/pages/ChatPage.css */
 
-/* 1. Estrutura Principal (Padrão do projeto) */
-.config-page-wrapper {
-  width: 100%;
+/* RESET */
+* { box-sizing: border-box; }
+
+/* 1. LAYOUT PRINCIPAL */
+.chat-page-wrapper {
+  display: flex;
+  width: 100vw;
   height: 100vh;
-  background-image: url('/chat-fundo.jpg');
-  background-size: cover;
-  background-position: center;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
-.config-container {
-  width: 100%;
-  max-width: 550px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: flex;
-  flex-direction: column;
+  background-color: #131314; /* Fundo bem escuro */
+  color: #E3E3E3; /* Texto padrão claro */
   overflow: hidden;
 }
 
-/* 2. Cabeçalho (Reutilizando estilos de outras páginas) */
-.config-header {
+/* 2. SIDEBAR (Esquerda) */
+.sidebar {
+  background-color: #1E1F20;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  border-right: 1px solid #333;
+  transition: width 0.3s ease, opacity 0.2s;
+  overflow: hidden;
+  white-space: nowrap;
+  z-index: 10; /* Garante que fique sobre o chat se encolher */
+}
+
+.sidebar.open { width: 260px; min-width: 260px; opacity: 1; }
+.sidebar.closed { width: 0; opacity: 0; border: none; }
+
+.sidebar-header {
   padding: 20px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #333;
 }
 
-.config-header h1 {
-  font-size: 20px;
-  margin: 0;
-  color: #333;
-}
+.logo-text { font-size: 18px; font-weight: bold; color: #fff; }
+.menu-trigger { cursor: pointer; padding: 5px; font-size: 20px; color: #ccc; }
 
-.back-button {
-  padding: 6px 12px;
-  background-color: white;
-  border: 1px solid #6c757d;
-  color: #6c757d;
-  border-radius: 4px;
+.sidebar-content { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+
+.new-chat-btn {
+  background-color: #2A2A2A;
+  color: #fff;
+  padding: 12px;
+  border-radius: 25px;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
+  margin-bottom: 20px;
+  border: 1px solid #444;
+  text-align: center;
+  font-weight: 500;
 }
-.back-button:hover {
-  background-color: #6c757d;
-  color: white;
+.new-chat-btn:hover { background-color: #333; }
+
+.menu-section ul { list-style: none; padding: 0; margin: 0; }
+.menu-section li {
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #ccc;
+  margin-bottom: 5px;
+  font-size: 15px;
+  transition: 0.2s;
+}
+.menu-section li:hover { background-color: #333; color: #fff; }
+
+.menu-footer { margin-top: auto; }
+.logout-btn {
+  background: none; border: none; color: #ff6b6b; 
+  cursor: pointer; width: 100%; text-align: left; padding: 10px; font-weight: bold;
 }
 
-/* 3. Lista de Configurações */
-.settings-list {
-  padding: 30px;
+/* 3. CHAT (Direita) */
+.chat-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  background-color: #131314;
+}
+
+/* Barra Superior */
+.chat-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 60px;
+  border-bottom: 1px solid #222;
+  background-color: #131314;
+}
+
+.toggle-btn {
+  background: none; border: none; color: #ccc; font-size: 24px; cursor: pointer;
+}
+
+.user-avatar {
+  width: 35px; height: 35px;
+  background-color: #00FF7F; /* Verde Neon do Tema */
+  color: #000;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold;
+}
+
+/* Área de Mensagens */
+.message-list-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.messages-wrapper {
+  width: 100%;
+  max-width: 800px;
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding-bottom: 20px; /* Espaço no fim */
 }
 
-.setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px dashed #eee;
-}
+/* Mensagens */
+.message-row { display: flex; width: 100%; }
+.message-row.sent { justify-content: flex-end; }
+.message-row.received { justify-content: flex-start; }
 
-.setting-item label {
+.message-bubble {
+  max-width: 80%;
+  padding: 14px 18px;
+  border-radius: 18px;
   font-size: 16px;
-  color: #333;
-  font-weight: 500;
+  line-height: 1.5;
+  position: relative;
+  word-wrap: break-word;
 }
 
-.settings-list .status-info {
-  font-size: 13px;
+/* Cores das Mensagens - ALTO CONTRASTE */
+.sent .message-bubble {
+  background-color: #2A2A2A; /* Cinza Escuro */
+  color: #fff;
+  border-bottom-right-radius: 4px;
+  border: 1px solid #444;
+}
+
+.received .message-bubble {
+  background-color: transparent;
+  color: #E3E3E3;
+  padding-left: 0;
+}
+
+/* Feedback da IA */
+.message-bubble p { margin: 0; }
+.message-timestamp {
+  display: block;
+  font-size: 11px;
   color: #888;
-  margin-top: 10px;
+  margin-top: 5px;
+  text-align: right;
 }
 
-/* Estilo para Checkbox (o input padrão) */
-.setting-item input[type="checkbox"] {
-  transform: scale(1.5); /* Aumenta o tamanho do checkbox padrão */
-  cursor: pointer;
-  accent-color: #007bff; /* Munda a cor do checkbox nativo */
+/* Botão de Deletar */
+.delete-icon {
+  position: absolute; top: -8px; right: -8px;
+  background: #333; color: #ff4757;
+  border-radius: 50%; width: 20px; height: 20px;
+  text-align: center; line-height: 20px;
+  font-size: 12px; cursor: pointer; opacity: 0; transition: 0.2s;
+}
+.message-bubble:hover .delete-icon { opacity: 1; }
+
+/* 4. INPUT (Fixo Embaixo) */
+.input-area-wrapper {
+  padding: 20px;
+  background-color: #131314;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-top: 1px solid #222; /* Separação sutil */
+}
+
+.input-bar {
+  width: 100%;
+  max-width: 800px;
+  background-color: #1E1F20;
+  border-radius: 30px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid #444;
+}
+
+.input-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: white; /* Texto branco no input */
+  font-size: 16px;
+  outline: none;
+}
+
+.input-bar input::placeholder { color: #666; }
+
+.mic-btn, .send-btn {
+  background: none; border: none; cursor: pointer; font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+.mic-btn { color: #ccc; }
+.mic-btn.recording { color: #ff4757; animation: pulse 1.5s infinite; }
+.send-btn { color: #00FF7F; font-size: 16px; font-weight: bold; }
+
+.disclaimer { font-size: 12px; color: #555; margin-top: 10px; }
+
+.empty-state {
+  text-align: center;
+  margin-top: 20vh;
+  color: #666;
+}
+.empty-state h1 {
+  font-size: 32px;
+  color: #444; /* Texto escuro no fundo escuro = ruim. Vamos mudar: */
+  background: linear-gradient(to right, #00FF7F, #00BFFF);
+  -webkit-background-clip: text;
+  color: transparent; /* Texto gradiente neon */
+  margin-bottom: 10px;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
 }

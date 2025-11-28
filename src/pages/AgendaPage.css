@@ -1,108 +1,166 @@
 /* Em: src/pages/AgendaPage.css */
 
-/* 1. O Fundo da Página (copiado do ChatPage.css) */
 .agenda-page-wrapper {
   width: 100%;
-  height: 100vh; 
-  background-image: url('/chat-fundo.jpg'); /* Use a mesma imagem de fundo */
-  background-size: cover;
-  background-position: center;
-
-  /* Centraliza o container da agenda */
+  height: 100vh;
+  background-color: #1C1B22;
+  color: white;
   display: flex;
   justify-content: center;
   align-items: center;
-
-  /* Adiciona scroll se a tela for pequena */
-  overflow-y: auto;
   padding: 20px;
 }
 
-/* 2. O Container Transparente (copiado do ChatPage.css) */
 .agenda-container {
   width: 100%;
-  max-width: 800px; /* Mais largo que o chat para caber a agenda */
-  min-height: 80vh; /* Altura mínima */
-
-  background-color: rgba(255, 255, 255, 0.85);
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
+  max-width: 600px;
+  height: 85vh;
+  background-color: #272635;
+  border-radius: 20px;
+  box-shadow: 0 0 40px rgba(0, 255, 127, 0.1);
+  border: 1px solid rgba(0, 255, 127, 0.2);
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Para o border-radius funcionar */
+  overflow: hidden;
 }
 
-/* 3. O Cabeçalho da Página de Agenda */
+/* Header */
 .agenda-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #ddd;
-}
-.agenda-header h1 {
-  font-size: 22px;
-  margin: 0;
-}
-.agenda-back-button {
-  padding: 8px 12px;
-  border: 1px solid #007bff;
-  color: #007bff;
-  background-color: #fff;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s, color 0.2s;
-}
-.agenda-back-button:hover {
-  background-color: #007bff;
-  color: white;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* 4. A Lista de Consultas */
+.agenda-header h1 {
+  font-size: 20px;
+  margin: 0;
+  color: #00FF7F;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.agenda-back-button, .new-appt-button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ccc;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.3s;
+}
+
+.new-appt-button {
+    border-color: #00FF7F;
+    color: #00FF7F;
+}
+
+.new-appt-button:hover {
+    background-color: #00FF7F;
+    color: #1C1B22;
+}
+
+.agenda-back-button:hover {
+  border-color: #fff;
+  color: #fff;
+}
+
+/* --- FORMULÁRIO DE AGENDAMENTO --- */
+.schedule-form {
+    background-color: #1E1F20;
+    padding: 20px;
+    border-bottom: 1px solid #444;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.schedule-form h3 {
+    margin-top: 0;
+    color: #fff;
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+    flex: 1;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 5px;
+}
+
+.schedule-form input, .schedule-form select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background-color: #2C2C2C;
+    color: white;
+    outline: none;
+}
+
+.schedule-form input:focus, .schedule-form select:focus {
+    border-color: #00FF7F;
+}
+
+.confirm-schedule-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #00FF7F;
+    border: none;
+    border-radius: 8px;
+    color: #1C1B22;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.confirm-schedule-btn:hover {
+    background-color: #00cc66;
+}
+
+/* --- LISTA --- */
 .appointment-list {
   flex-grow: 1;
-  overflow-y: auto; /* Adiciona scroll SÓ na lista */
+  overflow-y: auto;
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 15px; /* Espaço entre os cartões */
+  gap: 15px;
 }
 
-/* 5. O Cartão de Consulta Individual */
 .appointment-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  background-color: #fff;
-  border: 1px solid #ddd;
+  background-color: #1E1F20;
+  border-left: 4px solid #00FF7F;
+  padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.appt-datetime {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
+.appt-date { font-size: 14px; font-weight: bold; display: block;}
+.appt-time { font-size: 20px; color: #00FF7F; font-weight: 300; }
+.appt-patient { text-align: right; }
+.appt-patient strong { display: block; font-size: 15px; }
+.appt-patient small { color: #888; font-size: 12px; }
 
-.appt-date {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-}
-
-.appt-time {
-  font-size: 14px;
-  color: #555;
-}
-
-.appt-patient {
-  font-size: 16px;
-  color: #0056b3; /* Cor destacada para o paciente */
-  font-weight: 500;
-}
+.empty-chat-message { text-align: center; color: #666; margin-top: 50px; }

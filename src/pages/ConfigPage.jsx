@@ -1,32 +1,61 @@
 // Em: src/pages/ConfigPage.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ConfigPage.css';
 
-// Função para carregar as configurações salvas no Local Storage
+// Função para carregar (padrão: escuro ativado)
 const loadInitialState = () => {
-  try {
-    const saved = localStorage.getItem('appSettings');
-    return saved ? JSON.parse(saved) : { darkMode: false, notifications: true };
-  } catch (error) {
-    console.error("Erro ao carregar configurações do Local Storage:", error);
-    return { darkMode: false, notifications: true }; // Retorna padrão em caso de erro
-  }
+  const saved = localStorage.getItem('appSettings');
+  // Padrão: darkMode true (pois seu app já é escuro)
+  return saved ? JSON.parse(saved) : { darkMode: true, notifications: false };
 };
 
 function ConfigPage() {
   const navigate = useNavigate();
   const [settings, setSettings] = useState(loadInitialState);
 
-  // Função para atualizar uma configuração e salvar no Local Storage
+  // --- EFEITO 1: APLICAR O TEMA ---
+  useEffect(() => {
+    // Salva no LocalStorage
+    localStorage.setItem('appSettings', JSON.stringify(settings));
+
+    // Aplica a classe no corpo do site
+    if (settings.darkMode) {
+      document.body.classList.remove('light-theme');
+    } else {
+      document.body.classList.add('light-theme');
+    }
+  }, [settings.darkMode]);
+
+  // --- EFEITO 2: GERENCIAR NOTIFICAÇÕES ---
+  const handleNotificationToggle = () => {
+    const newState = !settings.notifications;
+    
+    if (newState === true) {
+      // Se ligou, pede permissão
+      if (!("Notification" in window)) {
+        alert("Este navegador não suporta notificações.");
+        return;
+      }
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          setSettings(prev => ({ ...prev, notifications: true }));
+          new Notification("Notificações Ativadas!", { body: "Agora você receberá alertas do FonoChat." });
+        } else {
+          alert("Permissão negada. Habilite no navegador.");
+          setSettings(prev => ({ ...prev, notifications: false }));
+        }
+      });
+    } else {
+      // Se desligou, apenas atualiza o estado
+      setSettings(prev => ({ ...prev, notifications: false }));
+    }
+  };
+
+  // Função genérica para outros toggles
   const handleToggle = (key) => {
-    setSettings(prev => {
-      const newSettings = { ...prev, [key]: !prev[key] };
-      // SALVA A NOVA CONFIGURAÇÃO NO LOCAL STORAGE
-      localStorage.setItem('appSettings', JSON.stringify(newSettings));
-      return newSettings;
-    });
+    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
@@ -42,28 +71,37 @@ function ConfigPage() {
 
         <div className="settings-list">
           
-          {/* Configuração 1: Modo Escuro */}
+          {/* Configuração 1: Modo Escuro (Switch) */}
           <div className="setting-item">
-            <label>Ativar Modo Escuro</label>
-            <input 
-              type="checkbox"
-              checked={settings.darkMode}
-              onChange={() => handleToggle('darkMode')}
-            />
+            <label>Modo Escuro (Padrão)</label>
+            <div className="switch-container">
+                <input 
+                  type="checkbox" 
+                  id="darkModeSwitch"
+                  checked={settings.darkMode}
+                  onChange={() => handleToggle('darkMode')}
+                />
+                <label htmlFor="darkModeSwitch" className="switch-label">Toggle</label>
+            </div>
           </div>
           
-          {/* Configuração 2: Notificações */}
+          {/* Configuração 2: Notificações (Switch) */}
           <div className="setting-item">
-            <label>Notificações Ativas</label>
-            <input 
-              type="checkbox"
-              checked={settings.notifications}
-              onChange={() => handleToggle('notifications')}
-            />
+            <label>Notificações</label>
+            <div className="switch-container">
+                <input 
+                  type="checkbox" 
+                  id="notifSwitch"
+                  checked={settings.notifications}
+                  // onChange usa a função especial que pede permissão
+                  onChange={handleNotificationToggle} 
+                />
+                <label htmlFor="notifSwitch" className="switch-label">Toggle</label>
+            </div>
           </div>
 
           <p className="status-info">
-            * Seus dados são salvos automaticamente no navegador.
+            * As alterações são salvas automaticamente.
           </p>
 
         </div>

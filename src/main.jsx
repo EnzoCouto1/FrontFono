@@ -15,6 +15,7 @@ import AgendaPage from './pages/AgendaPage';
 import HistoricoPage from './pages/HistoricoPage';
 import ProfilePage from './pages/ProfilePage';
 import ConfigPage from './pages/ConfigPage';
+import RegisterPage from './pages/RegisterPage';
 
 // Importe o CSS global
 import './index.css';
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
   {
     path: "/login", // 
     element: <LoginPage />,
+  },
+  {
+    path: "/register", 
+    element: <RegisterPage />,
   },
   {
     path: "/chat", //

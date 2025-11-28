@@ -1,16 +1,87 @@
+/* Em: src/index.css */
+
+/* Reset Básico */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-html,
-body,
-#root {
-  height: 100%; /* Garante que body e #root ocupem toda a altura */
+html, body, #root {
+  height: 100%;
   font-family: sans-serif;
 }
 
+/* Fundo padrão (caso o wrapper falhe) */
 body {
-  background-color: #f0f2f5; /* Apenas a cor de fundo */
+  background-color: #1C1B22;
+}
+
+/* --- TEMA CLARO (ATIVADO PELA CONFIG) --- */
+
+/* 1. Força o corpo a ser claro */
+body.light-theme {
+  color: #333 !important;
+}
+
+/* 2. Força TODOS os Wrappers de fundo a ficarem claros e SEM imagem */
+body.light-theme .chat-page-wrapper,
+body.light-theme .login-page-wrapper,
+body.light-theme .profile-page-wrapper,
+body.light-theme .agenda-page-wrapper,
+body.light-theme .historico-page-wrapper,
+body.light-theme .config-page-wrapper {
+    background-color: #f0f2f5 !important;
+    background-image: none !important; /* Remove a imagem de fundo escura */
+}
+
+/* 3. Força os Cards (Containers) a ficarem brancos */
+body.light-theme .chat-container,
+body.light-theme .profile-container,
+body.light-theme .agenda-container,
+body.light-theme .historico-container,
+body.light-theme .config-container,
+body.light-theme .login-container-card {
+  background-color: #ffffff !important;
+  border: 1px solid #ccc !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* 4. Força os textos a ficarem escuros */
+body.light-theme h1, 
+body.light-theme h2,
+body.light-theme h3,
+body.light-theme p, 
+body.light-theme span, 
+body.light-theme label,
+body.light-theme input {
+  color: #333 !important;
+}
+
+/* 5. Ajustes Específicos de Inputs e Botões no modo claro */
+body.light-theme input {
+    background-color: #fff !important;
+    border: 1px solid #ccc !important;
+}
+
+body.light-theme .sidebar {
+    background-color: #fff !important;
+    border-right: 1px solid #ddd !important;
+}
+
+body.light-theme .sidebar-menu li {
+    color: #555 !important;
+}
+
+body.light-theme .sidebar-menu li:hover {
+    background-color: #f0f0f0 !important;
+    color: #007bff !important; /* Azul padrão em vez de verde neon */
+}
+
+/* Ajuste para o botão de voltar ficar visível no fundo branco */
+body.light-theme .back-button,
+body.light-theme .agenda-back-button,
+body.light-theme .historico-back-button {
+    color: #555 !important;
+    border-color: #ccc !important;
 }

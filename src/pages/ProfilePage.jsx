@@ -6,70 +6,75 @@ import './ProfilePage.css';
 function ProfilePage() {
     const navigate = useNavigate();
     
-    // Estado inicial vazio (para ser preenchido pela API)
+    // Estado adaptável
     const [userData, setUserData] = useState({
         nome: '',
         idade: '',
         endereco: '',
-        nivel: ''
+        // Campos exclusivos
+        nivel: '',        // Só Cliente
+        crmFono: '',      // Só Especialista
+        especialidade: '' // Só Especialista
     });
 
+    const [userType, setUserType] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
-    const [isUpdating, setIsUpdating] = useState(false);
 
-    // --- BUSCAR DADOS DO PERFIL ---
     useEffect(() => {
         const fetchUserData = async () => {
-            // 1. Pega o ID salvo no login
             const userId = localStorage.getItem('userId');
+            const type = localStorage.getItem('userType'); // 'CLIENTE' ou 'ESPECIALISTA'
+            setUserType(type);
             
             if (!userId) {
-                setError("Usuário não identificado. Faça login novamente.");
-                setIsLoading(false);
+                navigate('/login');
                 return;
             }
 
             try {
-                // 2. Chama o Back-end
-                console.log(`Buscando dados do cliente ID: ${userId}...`);
-                const response = await api.get(`/clientes/${userId}`);
-                console.log("Dados recebidos:", response.data);
+                // DECIDE QUAL URL CHAMAR
+                const endpoint = type === 'ESPECIALISTA' 
+                    ? `/especialistas/${userId}` 
+                    : `/clientes/${userId}`;
+
+                const response = await api.get(endpoint);
                 
-                // 3. Atualiza a tela com os dados reais
                 setUserData({
                     nome: response.data.nome || '',
                     idade: response.data.idade || '',
                     endereco: response.data.endereco || '',
-                    nivel: response.data.nivel || ''
+                    nivel: response.data.nivel || '',
+                    crmFono: response.data.crmFono || '',
+                    especialidade: response.data.especialidade || ''
                 });
 
             } catch (err) {
-                console.error("Erro ao buscar perfil:", err);
-                setError("Erro ao carregar dados. Verifique se o Back-end está rodando.");
+                setError("Erro ao carregar perfil.");
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchUserData();
-    }, []);
+    }, [navigate]);
 
-    // --- ATUALIZAR PERFIL ---
-    const handleUpdate = async (event) => {
-        event.preventDefault();
+    const handleUpdate = async (e) => {
+        e.preventDefault();
         setIsUpdating(true);
         setError(null);
         setSuccessMessage(null);
+
         const userId = localStorage.getItem('userId');
+        const endpoint = userType === 'ESPECIALISTA' ? `/especialistas/${userId}` : `/clientes/${userId}`;
 
         try {
-            await api.put(`/clientes/${userId}`, userData);
-            setSuccessMessage("Perfil atualizado com sucesso!");
+            await api.put(endpoint, userData);
+            setSuccessMessage("Perfil atualizado!");
         } catch (err) {
-            console.error("Erro ao atualizar:", err);
-            setError("Falha ao salvar alterações.");
+            setError("Erro ao salvar.");
         } finally {
             setIsUpdating(false);
         }
@@ -77,10 +82,10 @@ function ProfilePage() {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setUserData(prev => ({ ...prev, [name]: value }));
+        const finalValue = name === 'idade' ? (value ? parseInt(value) : '') : value;
+        setUserData(prev => ({ ...prev, [name]: finalValue }));
     };
 
-    // --- RENDERIZAÇÃO ---
     if (isLoading) return <div className="profile-page-wrapper"><p>Carregando...</p></div>;
 
     return (
@@ -92,33 +97,50 @@ function ProfilePage() {
                 </header>
 
                 <div className="profile-content">
-                    {error && <p style={{ color: 'red' }}>{error}</p>}
-                    {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
+                    {error && <p style={{ color: '#ff4757' }}>{error}</p>}
+                    {successMessage && <p style={{ color: '#00FF7F' }}>{successMessage}</p>}
 
                     <div className="profile-avatar-section">
                         <div className="avatar-placeholder">
-                            {userData.nome ? userData.nome.charAt(0).toUpperCase() : '?'}
+                            {userData.nome ? userData.nome.charAt(0).toUpperCase() : 'U'}
                         </div>
-                        <p className="avatar-role">Nível: {userData.nivel}</p>
+                        <p className="avatar-role">{userType === 'ESPECIALISTA' ? 'Fonoaudiólogo' : 'Paciente'}</p>
                     </div>
 
                     <form className="profile-form" onSubmit={handleUpdate}>
                         <div className="form-group">
-                            <label htmlFor="nome">Nome</label>
+                            <label>Nome</label>
                             <input type="text" name="nome" value={userData.nome} onChange={handleChange} required />
                         </div>
+                        
                         <div className="form-group">
-                            <label htmlFor="idade">Idade</label>
+                            <label>Idade</label>
                             <input type="number" name="idade" value={userData.idade} onChange={handleChange} required />
                         </div>
+
                         <div className="form-group">
-                            <label htmlFor="endereco">Endereço</label>
+                            <label>Endereço</label>
                             <input type="text" name="endereco" value={userData.endereco} onChange={handleChange} />
                         </div>
-                        <div className="form-group">
-                            <label htmlFor="nivel">Nível</label>
-                            <input type="text" name="nivel" value={userData.nivel} readOnly style={{backgroundColor: '#e9ecef'}} />
-                        </div>
+
+                        {/* CAMPOS DINÂMICOS BASEADOS NO TIPO */}
+                        {userType === 'ESPECIALISTA' ? (
+                            <>
+                                <div className="form-group">
+                                    <label>CRFA (Registro)</label>
+                                    <input type="text" name="crmFono" value={userData.crmFono} onChange={handleChange} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Especialidade</label>
+                                    <input type="text" name="especialidade" value={userData.especialidade} onChange={handleChange} />
+                                </div>
+                            </>
+                        ) : (
+                            <div className="form-group">
+                                <label>Nível</label>
+                                <input type="text" name="nivel" value={userData.nivel} readOnly />
+                            </div>
+                        )}
 
                         <button type="submit" className="save-button" disabled={isUpdating}>
                             {isUpdating ? 'Salvando...' : 'Salvar Alterações'}
