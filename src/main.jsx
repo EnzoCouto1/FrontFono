@@ -16,6 +16,8 @@ import HistoricoPage from './pages/HistoricoPage';
 import ProfilePage from './pages/ProfilePage';
 import ConfigPage from './pages/ConfigPage';
 import RegisterPage from './pages/RegisterPage';
+import SpecialistPage from './pages/SpecialistPage';
+import SecretariaPage from './pages/SecretariaPage';
 
 // Importe o CSS global
 import './index.css';
@@ -52,6 +54,14 @@ const router = createBrowserRouter([
   {
     path: "/config", // 
     element: <ConfigPage />,
+  },
+  {
+    path: "/painel-especialista",
+    element: <SpecialistPage />,
+  },
+  {
+    path: "/painel-secretaria",
+    element: <SecretariaPage />,
   },
 ]);
 

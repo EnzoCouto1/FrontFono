@@ -6,9 +6,9 @@ import './AgendaPage.css';
 function AgendaPage() {
     const navigate = useNavigate();
     
-    // Estados da Lista
+    // Estados
     const [appointments, setAppointments] = useState([]);
-    const [specialists, setSpecialists] = useState([]); // Lista de especialistas para o select
+    const [specialists, setSpecialists] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     
     // Estados do Formulário
@@ -16,47 +16,52 @@ function AgendaPage() {
     const [formData, setFormData] = useState({
         date: '',
         time: '',
-        type: 'Terapia de Fala', // Valor padrão
+        type: 'Terapia de Fala',
         specialistId: ''
     });
 
-    // 1. Buscar Especialistas (Para preencher o <select>)
-    useEffect(() => {
-        const fetchSpecialists = async () => {
-            try {
-                const response = await api.get('/especialistas');
-                setSpecialists(response.data);
-                // Se tiver especialistas, seleciona o primeiro por padrão
-                if (response.data.length > 0) {
-                    setFormData(prev => ({ ...prev, specialistId: response.data[0].id }));
-                }
-            } catch (err) {
-                console.error("Erro ao buscar especialistas:", err);
-            }
-        };
-        fetchSpecialists();
-    }, []);
+    // --- VERIFICAÇÃO DE PERMISSÃO ---
+    const userType = localStorage.getItem('userType'); // 'CLIENTE', 'ESPECIALISTA' ou 'SECRETARIA'
+    const canSchedule = userType === 'SECRETARIA'; // Só secretária pode agendar aqui
 
-    // 2. Buscar Consultas (Lista Principal)
+    // 1. Buscar Especialistas (Só busca se tiver permissão, para economizar recurso)
+    useEffect(() => {
+        if (canSchedule) {
+            const fetchSpecialists = async () => {
+                try {
+                    const response = await api.get('/especialistas');
+                    setSpecialists(response.data);
+                    if (response.data.length > 0) {
+                        setFormData(prev => ({ ...prev, specialistId: response.data[0].id }));
+                    }
+                } catch (err) {
+                    console.error("Erro ao buscar especialistas:", err);
+                }
+            };
+            fetchSpecialists();
+        }
+    }, [canSchedule]);
+
+    // 2. Buscar Consultas
     const fetchConsultas = useCallback(async () => {
-        const clienteId = localStorage.getItem('userId');
-        if (!clienteId) return;
+        const userId = localStorage.getItem('userId');
+        if (!userId) return;
 
         try {
             setIsLoading(true);
-            const response = await api.get(`/consultas/cliente/${clienteId}`);
+            // Se for cliente, busca as dele. Se for secretária/médico, a lógica pode mudar no futuro.
+            // Por enquanto, assumimos que nesta página vemos a agenda do usuário logado.
+            const response = await api.get(`/consultas/cliente/${userId}`);
             
-            // Precisamos buscar o nome do especialista para cada consulta
-            // (Isso poderia ser otimizado no back-end, mas faremos aqui)
             const consultasComNomes = await Promise.all(
                 response.data
-                    .filter(c => c.status === 'AGENDADA') // Só mostra as futuras
+                    .filter(c => c.status === 'AGENDADA') 
                     .map(async (c) => {
                         let nomeEspecialista = 'Especialista';
                         try {
-                            const respEsp = await api.get(`/especialistas/${c.especialistaId}`);
-                            nomeEspecialista = respEsp.data.nome;
-                        } catch (e) { /* ignora erro */ }
+                            const resp = await api.get(`/especialistas/${c.especialistaId}`);
+                            nomeEspecialista = resp.data.nome;
+                        } catch (e) {}
 
                         return {
                             id: c.id,
@@ -68,6 +73,7 @@ function AgendaPage() {
                     })
             );
             
+            consultasComNomes.sort((a, b) => new Date(a.date) - new Date(b.date));
             setAppointments(consultasComNomes);
         } catch (err) {
             console.error("Erro ao buscar agenda:", err);
@@ -80,43 +86,33 @@ function AgendaPage() {
         fetchConsultas();
     }, [fetchConsultas]);
 
-    // 3. Lidar com o Envio do Formulário (Agendar)
+    // 3. Agendar (Só funciona se for Secretária)
     const handleSchedule = async (e) => {
         e.preventDefault();
-        const clienteId = localStorage.getItem('userId');
-
-        if (!formData.date || !formData.time || !formData.specialistId) {
-            alert("Preencha todos os campos!");
-            return;
-        }
+        const userId = localStorage.getItem('userId'); // Aqui seria o ID do cliente logado
 
         try {
-            // Monta o JSON igual ao que fazíamos no Swagger
             const payload = {
                 data: formData.date,
-                hora: formData.time + ":00", // Adiciona segundos se necessário
+                hora: formData.time + ":00",
                 tipo: formData.type,
                 status: "AGENDADA",
-                clienteId: parseInt(clienteId),
+                clienteId: parseInt(userId), // Agenda para o usuário atual
                 especialistaId: parseInt(formData.specialistId)
             };
 
             await api.post('/consultas', payload);
-            
             alert("Consulta agendada com sucesso!");
-            setShowForm(false); // Fecha o formulário
-            fetchConsultas();   // Recarrega a lista
+            setShowForm(false);
+            fetchConsultas();
             
         } catch (err) {
-            console.error("Erro ao agendar:", err);
-            alert("Erro ao agendar. Verifique os dados.");
+            alert("Erro ao agendar.");
         }
     };
 
-    // Lidar com mudanças nos inputs
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData({...formData, [e.target.name]: e.target.value});
     };
 
     return (
@@ -125,22 +121,36 @@ function AgendaPage() {
                 <header className="agenda-header">
                     <h1>Minha Agenda</h1>
                     <div className="header-buttons">
-                        <button 
-                            className="new-appt-button" 
-                            onClick={() => setShowForm(!showForm)}
-                        >
-                            {showForm ? 'Cancelar' : '+ Nova Consulta'}
-                        </button>
+                        
+                        {/* --- BOTÃO VISÍVEL APENAS PARA SECRETÁRIA --- */}
+                        {canSchedule && (
+                            <button 
+                                className="new-appt-button" 
+                                onClick={() => setShowForm(!showForm)}
+                            >
+                                {showForm ? 'Cancelar' : '+ Nova Consulta'}
+                            </button>
+                        )}
+
                         <button className="agenda-back-button" onClick={() => navigate('/chat')}>
                             Voltar
                         </button>
                     </div>
                 </header>
 
-                {/* --- FORMULÁRIO DE AGENDAMENTO (Aparece só quando clica) --- */}
-                {showForm && (
+                {/* --- FORMULÁRIO SÓ APARECE SE FOR SECRETÁRIA E TIVER CLICADO --- */}
+                {canSchedule && showForm && (
                     <form className="schedule-form" onSubmit={handleSchedule}>
                         <h3>Agendar Horário</h3>
+                        {/* ... campos do formulário ... */}
+                        <div className="form-group">
+                            <label>Especialista</label>
+                            <select name="specialistId" value={formData.specialistId} onChange={handleInputChange}>
+                                {specialists.map(esp => (
+                                    <option key={esp.id} value={esp.id}>{esp.nome} - {esp.especialidade}</option>
+                                ))}
+                            </select>
+                        </div>
                         <div className="form-row">
                             <div className="form-group">
                                 <label>Data</label>
@@ -151,19 +161,9 @@ function AgendaPage() {
                                 <input type="time" name="time" value={formData.time} onChange={handleInputChange} required />
                             </div>
                         </div>
-                        
                         <div className="form-group">
-                            <label>Especialista</label>
-                            <select name="specialistId" value={formData.specialistId} onChange={handleInputChange}>
-                                {specialists.map(esp => (
-                                    <option key={esp.id} value={esp.id}>{esp.nome} - {esp.especialidade}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="form-group">
-                            <label>Tipo de Consulta</label>
-                            <input type="text" name="type" value={formData.type} onChange={handleInputChange} placeholder="Ex: Terapia de Voz" />
+                            <label>Tipo</label>
+                            <input type="text" name="type" value={formData.type} onChange={handleInputChange} placeholder="Ex: Terapia" required />
                         </div>
 
                         <button type="submit" className="confirm-schedule-btn">Confirmar Agendamento</button>
@@ -176,6 +176,8 @@ function AgendaPage() {
                     ) : appointments.length === 0 ? (
                          <div className="empty-chat-message">
                             <p>Nenhuma consulta futura agendada.</p>
+                            {/* Mensagem explicativa para o Cliente */}
+                            {!canSchedule && <p style={{fontSize: '12px', marginTop: '10px'}}>Entre em contato com a secretaria para agendar.</p>}
                          </div>
                     ) : (
                         appointments.map(appt => (

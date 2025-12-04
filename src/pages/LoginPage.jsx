@@ -29,8 +29,14 @@ function LoginPage() {
       if (token) {
         localStorage.setItem('authToken', token);
         localStorage.setItem('userId', id);
-        localStorage.setItem('userType', tipoUsuario); // <--- SALVANDO O TIPO!
-        navigate('/chat');
+        localStorage.setItem('userType', response.data.tipoUsuario);
+        if (response.data.tipoUsuario === 'ESPECIALISTA') {
+          navigate('/painel-especialista');
+        } else if (response.data.tipoUsuario === 'SECRETARIA') {
+          navigate('/painel-secretaria');
+        } else {
+        navigate('/chat'); // Cliente vai pro chat
+        }
       }
     } catch (err) {
       setError('Email ou senha inválidos.');

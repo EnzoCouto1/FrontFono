@@ -1,0 +1,166 @@
+/* Em: src/pages/SpecialistPage.css */
+
+.specialist-wrapper {
+    background-color: #1C1B22;
+    min-height: 100vh;
+    width: 100%;
+    color: white;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.specialist-container {
+    width: 100%;
+    max-width: 1000px;
+}
+
+.specialist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+}
+
+.specialist-header h1 {
+    color: #00FF7F; /* Verde Neon */
+    margin: 0;
+    font-size: 24px;
+}
+
+.logout-btn-header {
+    background: transparent;
+    border: 1px solid #ff4757;
+    color: #ff4757;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.logout-btn-header:hover { background-color: #ff4757; color: white; }
+
+.dashboard-content h2 {
+    font-size: 18px;
+    color: #ccc;
+    margin-bottom: 20px;
+}
+
+/* GRID DE CARDS */
+.chats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.patient-card {
+    background-color: #272635;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(0, 255, 127, 0.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+.patient-card:hover {
+    transform: translateY(-5px);
+    border-color: #00FF7F;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.patient-avatar {
+    width: 50px;
+    height: 50px;
+    background-color: #00FF7F;
+    color: #1C1B22;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.patient-info h3 { margin: 0; font-size: 18px; color: #fff; }
+.patient-level { font-size: 12px; color: #aaa; text-transform: uppercase; }
+
+.card-stats {
+    background-color: #1C1B22;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #ccc;
+}
+
+.card-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-report {
+    flex: 1;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.btn-delete {
+    padding: 10px;
+    background-color: transparent;
+    border: 1px solid #ff4757;
+    color: #ff4757;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.btn-delete:hover { background-color: rgba(255, 71, 87, 0.1); }
+
+.loading-text, .empty-state-specialist {
+    text-align: center;
+    color: #666;
+    margin-top: 50px;
+}
+
+/* Adicione ao final de src/pages/SpecialistPage.css */
+
+/* Modal */
+.report-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 2000;
+}
+.report-content {
+    background: #272635; padding: 20px; border-radius: 15px; border: 1px solid #00FF7F;
+    box-shadow: 0 0 30px rgba(0,255,127,0.2);
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+.close-modal-btn { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+
+/* Área de mensagens dentro do modal */
+.modal-body-chat {
+    flex: 1; overflow-y: auto; background-color: #131314; padding: 15px; border-radius: 10px; margin-bottom: 15px;
+    display: flex; flex-direction: column; gap: 10px;
+}
+
+.msg-item { display: flex; width: 100%; }
+.msg-item.sent { justify-content: flex-end; }     /* Paciente (Enviou) */
+.msg-item.received { justify-content: flex-start; } /* IA (Recebeu) */
+
+.msg-bubble-spec {
+    max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 14px; color: white;
+}
+.sent .msg-bubble-spec { background-color: #2A2A2A; border-bottom-right-radius: 2px; }
+.received .msg-bubble-spec { background-color: #333; border-bottom-left-radius: 2px; color: #ccc; }
+
+.msg-target { display: block; color: #00FF7F; font-size: 10px; margin-bottom: 3px; }
+
+.btn-close-main {
+    width: 100%; padding: 10px; background-color: #00FF7F; color: #000; border: none; font-weight: bold; border-radius: 5px; cursor: pointer;
+}

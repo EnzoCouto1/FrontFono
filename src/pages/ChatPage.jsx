@@ -3,50 +3,118 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ChatPage.css';
 
-const loadInitialMessages = () => {
-  const savedMessages = localStorage.getItem('chatMessages_v2'); // Mudei a chave para limpar cache antigo
-  if (savedMessages) {
-    try { return JSON.parse(savedMessages); } catch (e) { console.error(e); }
-  }
-  return [{ id: 1, type: 'text', content: 'Olá! Digite a palavra que quer treinar abaixo e grave seu áudio.', sender: 'received', timestamp: new Date() }];
-};
-
 function ChatPage() {
-  // --- ESTADOS ---
-  const [messages, setMessages] = useState(loadInitialMessages);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  
-  // Estado para a mensagem de texto normal (Chat)
-  const [newMessage, setNewMessage] = useState('');
-  
-  // NOVO: Estado para a palavra que o usuário vai treinar no áudio
-  const [practiceText, setPracticeText] = useState('rato, carro, terra');
-  
-  const [isRecording, setIsRecording] = useState(false);
-  
   const navigate = useNavigate();
+  const userId = localStorage.getItem('userId');
+
+  // --- ESTADOS DE NAVEGAÇÃO ---
+  const [step, setStep] = useState('SELECTION'); // Começa escolhendo
+  const [specialists, setSpecialists] = useState([]);
+  const [selectedSpecialist, setSelectedSpecialist] = useState(null);
+  const [backendChatId, setBackendChatId] = useState(null);
+
+  // --- ESTADOS DO CHAT ---
+  const [messages, setMessages] = useState([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [newMessage, setNewMessage] = useState('');
+  const [practiceText, setPracticeText] = useState('rato, carro, terra');
+  const [isRecording, setIsRecording] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const mediaRecorderRef = useRef(null);
   const messageListRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  // --- EFEITOS ---
-  // Pega o ID do usuário para salvar histórico separado
-  const userId = localStorage.getItem('userId');
-  const storageKey = `chatMessages_${userId}`;
-
+  // 1. Carregar lista de especialistas ao abrir
   useEffect(() => {
-    if (userId) {
-      localStorage.setItem(storageKey, JSON.stringify(messages));
-    }
-  }, [messages, userId, storageKey]);
+    const fetchSpecialists = async () => {
+        try {
+            const response = await api.get('/especialistas');
+            setSpecialists(response.data);
+        } catch (error) {
+            console.error("Erro ao buscar especialistas", error);
+        }
+    };
+    fetchSpecialists();
+  }, []);
 
-  useEffect(() => {
-    if (messageListRef.current) {
-      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+  // 2. Selecionar Especialista e Sincronizar Chat
+  const handleSelectSpecialist = async (specialist) => {
+    setSelectedSpecialist(specialist);
+    
+    try {
+        // Tenta criar o chat (o back-end já verifica se existe e retorna o antigo se for o caso)
+        const chatPayload = {
+            clienteId: parseInt(userId),
+            especialistaId: specialist.id,
+            duracao: 0,
+            conversa: "[]" // Inicia vazio se for novo
+        };
+
+        const response = await api.post('/chats', chatPayload);
+        const chatId = response.data.id;
+        
+        setBackendChatId(chatId);
+        
+        // Carrega as mensagens antigas do banco (se houver)
+        if (response.data.conversa) {
+            try {
+                const historico = JSON.parse(response.data.conversa);
+                setMessages(Array.isArray(historico) ? historico : []);
+            } catch (e) {
+                setMessages([]); 
+            }
+        } else {
+             setMessages([]);
+        }
+        
+        // Se estiver vazio, adiciona boas-vindas visual
+        if (!response.data.conversa || response.data.conversa === "[]" || response.data.conversa === "Chat iniciado pelo paciente.") {
+             setMessages([{
+                id: Date.now(),
+                type: 'text',
+                content: `Olá! Você está falando com ${specialist.nome}.`,
+                sender: 'received',
+                timestamp: new Date()
+            }]);
+        }
+
+        setStep('CHAT'); // Muda a tela
+
+    } catch (error) {
+        alert("Erro ao iniciar chat.");
+        console.error(error);
     }
+  };
+
+  // 3. Salvar histórico no Banco sempre que mudar (Só se tiver backendChatId)
+  useEffect(() => {
+    if (backendChatId && userId && messages.length > 0) {
+        const saveToDb = async () => {
+            try {
+                await api.put(`/chats/${backendChatId}`, {
+                    conversa: JSON.stringify(messages),
+                    duracao: messages.length,
+                    clienteId: parseInt(userId),
+                    especialistaId: selectedSpecialist.id
+                });
+            } catch (error) {
+                console.error("Erro ao salvar no banco:", error);
+            }
+        };
+        const timeoutId = setTimeout(saveToDb, 1000); // Debounce de 1s
+        return () => clearTimeout(timeoutId);
+    }
+  }, [messages, backendChatId, userId, selectedSpecialist]);
+
+  // Scroll automático
+  useEffect(() => {
+    if (messageListRef.current) messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
   }, [messages]);
 
-  // --- FUNÇÕES DE CHAT ---
+
+  // --- FUNÇÕES DE AÇÃO ---
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (newMessage.trim() === '') return;
@@ -56,192 +124,171 @@ function ChatPage() {
     setNewMessage('');
   };
 
-  const handleDeleteMessage = (id) => {
-    setMessages(prev => prev.filter(m => m.id !== id));
-  };
-
-  const handleClearChat = () => {
-    setMessages([]);
-    localStorage.removeItem(storageKey);
+  const handleDeleteMessage = (id) => setMessages(prev => prev.filter(m => m.id !== id));
+  
+  // Limpar conversa (Limpa no banco também!)
+  const handleClearChat = async () => {
+    if (window.confirm("Isso apagará o histórico com este especialista. Continuar?")) {
+        setMessages([]);
+        if (backendChatId) {
+            // Atualiza o banco com lista vazia
+             await api.put(`/chats/${backendChatId}`, {
+                conversa: "[]",
+                duracao: 0,
+                clienteId: parseInt(userId),
+                especialistaId: selectedSpecialist.id
+            });
+        }
+    }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userId');
+    localStorage.clear(); // Limpa tudo
     navigate('/');
   };
 
-  // --- LÓGICA DE ÁUDIO (DEEPGRAM) ---
-  const handleAudioRecording = async () => {
-    // Validação básica
-    if (!practiceText.trim()) {
-        alert("Digite as palavras que você vai falar no campo 'Treino' antes de gravar!");
-        return;
-    }
+  // Trocar de especialista (volta para a seleção)
+  const handleChangeSpecialist = () => {
+      setStep('SELECTION');
+      setBackendChatId(null);
+      setSelectedSpecialist(null);
+      setMessages([]);
+  };
 
-    if (isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    } else {
+  const handleSuggestWords = async () => {
+    setIsGenerating(true);
+    try {
+        const response = await api.get('/api/pronunciation/words', {
+            params: { idade: 10, dificuldade: 'R', quantidade: 3 },
+            headers: { 'Authorization': '' }
+        });
+        if (response.data.palavras) {
+            const novas = response.data.palavras.join(', ');
+            setPracticeText(novas);
+            setMessages(prev => [...prev, {
+                id: Date.now(), type: 'text', content: `Sugestão: "${novas}"`, sender: 'received', timestamp: new Date()
+            }]);
+        }
+    } catch (error) { alert("Erro ao gerar."); } finally { setIsGenerating(false); }
+  };
+
+  const handleAudioRecording = async () => {
+    if (!practiceText.trim()) { alert("Digite as palavras!"); return; }
+    if (isRecording) { mediaRecorderRef.current.stop(); setIsRecording(false); } 
+    else {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
-
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
         
         mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' }); // Chrome usa WebM
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           const audioUrl = URL.createObjectURL(audioBlob);
           
-          // Mostra o áudio no chat imediatamente
           setMessages(prev => [...prev, {
-            id: Date.now(), 
-            type: 'audio', 
-            content: audioUrl, 
-            sender: 'sent', 
-            timestamp: new Date(), 
-            targetText: practiceText // Salvamos o que o usuário tentou falar
+            id: Date.now(), type: 'audio', content: audioUrl, sender: 'sent', timestamp: new Date(), targetText: practiceText
           }]);
 
           const formData = new FormData();
           formData.append('audio', audioBlob, 'audio.wav');
-          // AGORA É DINÂMICO: Envia o que estiver escrito no input de treino
           formData.append('palavrasEsperadas', practiceText); 
 
           try {
-            // Envia sem token (rota pública para teste)
             const response = await api.post('/api/pronunciation/analyze-batch-deepgram', formData, {
               headers: { 'Content-Type': 'multipart/form-data', 'Authorization': '' },
             });
-
-            const aiFeedback = {
-              id: Date.now() + 1, 
-              type: 'text', 
-              sender: 'received', 
-              timestamp: new Date(),
-              content: `📊 Resultado para: "${practiceText}"\nNota: ${response.data.pontuacaoGeral?.toFixed(0)}%\n${response.data.feedbackGeral}`
-            };
-            setMessages(prev => [...prev, aiFeedback]);
-          } catch (err) {
-            console.error(err);
             setMessages(prev => [...prev, {
-              id: Date.now() + 2, type: 'text', sender: 'received', content: "Erro ao conectar com a IA.", timestamp: new Date()
+              id: Date.now() + 1, type: 'text', sender: 'received', timestamp: new Date(),
+              content: `📊 Resultado para: "${practiceText}"\nNota: ${response.data.pontuacaoGeral?.toFixed(0)}%\n${response.data.feedbackGeral}`
             }]);
+          } catch (err) {
+            setMessages(prev => [...prev, { id: Date.now()+2, type: 'text', sender: 'received', content: "Erro IA.", timestamp: new Date()}]);
           }
         };
-        mediaRecorder.start();
-        setIsRecording(true);
-      } catch (err) {
-        alert("Erro ao acessar microfone.");
-      }
+        mediaRecorder.start(); setIsRecording(true);
+      } catch (err) { alert("Erro microfone."); }
     }
   };
 
   return (
     <div className="chat-page-wrapper">
       
-      {/* SIDEBAR */}
+      {/* SIDEBAR (Comum às duas telas) */}
       <div className={`sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
-        <div className="sidebar-header">
-            <div className="menu-trigger" onClick={() => setIsSidebarOpen(false)}>☰</div>
-            <span className="logo-text">FonoChat</span>
-        </div>
+        <div className="sidebar-header"><div className="menu-trigger" onClick={() => setIsSidebarOpen(false)}>☰</div><span className="logo-text">FonoChat</span></div>
         <div className="sidebar-content">
-            <div className="new-chat-btn" onClick={handleClearChat}>+ Novo Chat</div>
-            <div className="menu-section">
-                <p>Navegação</p>
-                <ul>
-                    <li onClick={() => navigate('/perfil')}>👤 Meu Perfil</li>
-                    <li onClick={() => navigate('/agenda')}>📅 Minha Agenda</li>
-                    <li onClick={() => navigate('/historico')}>📜 Histórico</li>
-                    <li onClick={() => navigate('/config')}>⚙️ Configurações</li>
-                </ul>
-            </div>
-            <div className="menu-footer">
-                <button className="logout-btn" onClick={handleLogout}>Sair</button>
-            </div>
+            {/* Botão agora troca de especialista */}
+            <div className="new-chat-btn" onClick={handleChangeSpecialist}>+ Trocar Especialista</div>
+            
+            <div className="menu-section"><p>Navegação</p><ul>
+                <li onClick={() => navigate('/perfil')}>👤 Meu Perfil</li>
+                <li onClick={() => navigate('/agenda')}>📅 Minha Agenda</li>
+                <li onClick={() => navigate('/historico')}>📜 Histórico</li>
+                <li onClick={() => navigate('/config')}>⚙️ Configurações</li>
+            </ul></div>
+            <div className="menu-footer"><button className="logout-btn" onClick={handleLogout}>Sair</button></div>
         </div>
       </div>
   
-      {/* ÁREA PRINCIPAL */}
       <div className="chat-layout">
-        <header className="chat-top-bar">
-            {!isSidebarOpen && <button className="toggle-btn" onClick={() => setIsSidebarOpen(true)}>☰</button>}
-            <h2>Assistente de Fala</h2>
-            <div className="user-avatar">U</div>
-        </header>
-
-        <div className="message-list-container" ref={messageListRef}>
-          <div className="messages-wrapper">
-            {messages.length === 0 ? (
-                <div className="empty-state">
-                    <h1>Olá!</h1>
-                    <p>Escolha uma palavra, digite no campo de treino e grave seu áudio.</p>
+        
+        {/* TELA DE SELEÇÃO */}
+        {step === 'SELECTION' && (
+            <div className="selection-container">
+                <h1>Escolha seu Especialista</h1>
+                <p>Selecione um profissional para iniciar o atendimento.</p>
+                <div className="specialists-grid">
+                    {specialists.length === 0 ? <p>Carregando...</p> : specialists.map(spec => (
+                        <div key={spec.id} className="specialist-card" onClick={() => handleSelectSpecialist(spec)}>
+                            <div className="spec-avatar">{spec.nome.charAt(0)}</div>
+                            <h3>{spec.nome}</h3>
+                            <p>{spec.especialidade}</p>
+                            <button>Iniciar</button>
+                        </div>
+                    ))}
                 </div>
-            ) : (
-                messages.map(message => (
-                <div key={message.id} className={`message-row ${message.sender}`}>
-                    <div className="message-bubble">
-                        {message.targetText && <div className="target-label">Treino: {message.targetText}</div>}
-                        
-                        {message.type === 'audio' ? (
-                            <audio controls src={message.content}></audio>
-                        ) : (
-                            <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
-                        )}
-                        
-                        <span className="message-timestamp">
-                            {new Date(message.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        
-                        {message.sender === 'sent' && (
-                             <span className="delete-icon" onClick={() => handleDeleteMessage(message.id)}>&times;</span>
-                        )}
+            </div>
+        )}
+
+        {/* TELA DO CHAT */}
+        {step === 'CHAT' && (
+            <>
+                <header className="chat-top-bar">
+                    {!isSidebarOpen && <button className="toggle-btn" onClick={() => setIsSidebarOpen(true)}>☰</button>}
+                    <div className="chat-info">
+                        <h2>{selectedSpecialist?.nome}</h2>
+                    </div>
+                    <div className="user-avatar">U</div>
+                </header>
+
+                <div className="message-list-container" ref={messageListRef}>
+                    <div className="messages-wrapper">
+                        {messages.map(m => (
+                            <div key={m.id} className={`message-row ${m.sender}`}>
+                                <div className="message-bubble">
+                                    {m.targetText && <div className="target-label">Treino: {m.targetText}</div>}
+                                    {m.type === 'audio' ? <audio controls src={m.content}></audio> : <p style={{whiteSpace:'pre-wrap'}}>{m.content}</p>}
+                                    <span className="message-timestamp">{new Date(m.timestamp).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}</span>
+                                    {m.sender === 'sent' && <span className="delete-icon" onClick={() => handleDeleteMessage(m.id)}>&times;</span>}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
-                ))
-            )}
-          </div>
-        </div>
-  
-        {/* INPUTS (Chat + Treino) */}
-        <div className="input-area-wrapper">
-            
-            {/* CAMPO DE TREINO (Para definir o que vai falar) */}
-            <div className="practice-input-container">
-                <label>O que você vai falar?</label>
-                <input 
-                    type="text" 
-                    className="practice-input"
-                    value={practiceText}
-                    onChange={e => setPracticeText(e.target.value)}
-                    placeholder="Ex: Porta, Prato, Barco..."
-                />
-            </div>
-
-            <div className="input-bar">
-                <input
-                    type="text"
-                    placeholder="Digite uma mensagem de texto..."
-                    value={newMessage}
-                    onChange={e => setNewMessage(e.target.value)}
-                />
-                
-                {/* O botão de microfone agora grava com base no 'practiceText' */}
-                <button 
-                    type="button" 
-                    className={`mic-btn ${isRecording ? 'recording' : ''}`} 
-                    onClick={handleAudioRecording}
-                    title="Gravar Áudio do Treino"
-                >
-                    {isRecording ? '🟥' : '🎤'}
-                </button>
-                
-                <button type="submit" className="send-btn" onClick={handleSendMessage}>Enviar</button>
-            </div>
-        </div>
+        
+                <div className="input-area-wrapper">
+                    <div className="practice-input-container">
+                        <label>Treino:</label>
+                        <input type="text" className="practice-input" value={practiceText} onChange={e => setPracticeText(e.target.value)} placeholder="Palavras..." /><button className="suggest-btn" onClick={handleSuggestWords} disabled={isGenerating}>{isGenerating ? '...' : '✨ Sugerir'}</button>
+                    </div>
+                    <div className="input-bar">
+                        <input type="text" placeholder="Digite..." value={newMessage} onChange={e => setNewMessage(e.target.value)} /><button type="button" className={`mic-btn ${isRecording?'recording':''}`} onClick={handleAudioRecording}>{isRecording?'🟥':'🎤'}</button><button type="submit" className="send-btn" onClick={handleSendMessage}>Enviar</button>
+                    </div>
+                </div>
+            </>
+        )}
       </div>
     </div>
   );

@@ -1,25 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import './LoginPage.css'; // Mantendo o estilo Dark/Neon
+import './LoginPage.css';
 
 function RegisterPage() {
   const navigate = useNavigate();
   
-  // Estado para controlar se é Especialista
-  const [isSpecialist, setIsSpecialist] = useState(false);
+  // Tipo de Usuário: 'CLIENTE', 'ESPECIALISTA', 'SECRETARIA'
+  const [userType, setUserType] = useState('CLIENTE'); 
 
   const [formData, setFormData] = useState({
-    nome: '',
-    idade: '',
-    endereco: '',
-    login: '',
-    senha: '',
-    // Campos específicos de Cliente
-    nivel: 'Iniciante', 
-    // Campos específicos de Especialista
-    crmFono: '',
-    especialidade: ''
+    nome: '', idade: '', endereco: '', login: '', senha: '',
+    nivel: 'Iniciante', // Cliente
+    crmFono: '', especialidade: '', // Especialista
+    email: '' // Secretaria (email de contato)
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +34,6 @@ function RegisterPage() {
     setError('');
 
     try {
-      // Decide qual endpoint usar e quais dados enviar
       let endpoint = '/clientes';
       let payload = {
         nome: formData.nome,
@@ -50,27 +43,25 @@ function RegisterPage() {
         senha: formData.senha
       };
 
-      if (isSpecialist) {
+      if (userType === 'ESPECIALISTA') {
         endpoint = '/especialistas';
-        // Adiciona campos de médico
         payload.crmFono = formData.crmFono;
         payload.especialidade = formData.especialidade;
+      } else if (userType === 'SECRETARIA') {
+        endpoint = '/secretarias';
+        payload.email = formData.email; // Email de contato
       } else {
-        // Adiciona campos de paciente
         payload.nivel = formData.nivel;
       }
 
-      // Envia para o Back-end
       await api.post(endpoint, payload);
       
       setSuccess(true);
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      setTimeout(() => navigate('/login'), 2000);
 
     } catch (err) {
-      console.error("Erro ao cadastrar:", err);
-      setError('Erro ao criar conta. Verifique os dados ou tente outro login.');
+      console.error("Erro:", err);
+      setError('Erro ao criar conta. Verifique os dados.');
     } finally {
       setIsLoading(false);
     }
@@ -78,10 +69,9 @@ function RegisterPage() {
 
   return (
     <div className="login-page-wrapper">
-      
       <div className="welcome-message">
         <h1>Crie sua conta</h1>
-        <h2>{isSpecialist ? "Junte-se como Profissional" : "Comece sua jornada agora"}</h2>
+        <h2>Escolha seu perfil:</h2>
       </div>
 
       <div className="login-container-card" style={{ maxWidth: '450px', marginTop: '50px' }}>
@@ -90,24 +80,33 @@ function RegisterPage() {
         {success ? (
           <div style={{ textAlign: 'center', color: '#00FF7F' }}>
             <h3>Sucesso!</h3>
-            <p>Redirecionando para o login...</p>
+            <p>Redirecionando...</p>
           </div>
         ) : (
           <form className="login-form" onSubmit={handleRegister}>
-            
             {error && <p className="error-message">{error}</p>}
 
-            {/* --- CHECKBOX DE TIPO DE USUÁRIO --- */}
-            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: '#fff' }}>
-              <input 
-                type="checkbox" 
-                checked={isSpecialist} 
-                onChange={(e) => setIsSpecialist(e.target.checked)}
-                style={{ width: '20px', margin: 0, cursor: 'pointer', accentColor: '#00FF7F' }}
-              />
-              <label onClick={() => setIsSpecialist(!isSpecialist)} style={{ cursor: 'pointer', fontSize: '14px' }}>
-                Sou Fonoaudiólogo(a)
-              </label>
+            {/* SELETOR DE TIPO */}
+            <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                {['CLIENTE', 'ESPECIALISTA', 'SECRETARIA'].map(type => (
+                    <button 
+                        key={type}
+                        type="button"
+                        onClick={() => setUserType(type)}
+                        style={{
+                            padding: '8px 12px',
+                            border: '1px solid #00FF7F',
+                            borderRadius: '20px',
+                            background: userType === type ? '#00FF7F' : 'transparent',
+                            color: userType === type ? '#000' : '#fff',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: 'bold'
+                        }}
+                    >
+                        {type === 'CLIENTE' ? 'Paciente' : type === 'SECRETARIA' ? 'Secretária' : 'Fono'}
+                    </button>
+                ))}
             </div>
             
             {/* Campos Comuns */}
@@ -118,19 +117,25 @@ function RegisterPage() {
                 <input type="text" name="endereco" placeholder="Endereço" value={formData.endereco} onChange={handleChange} required style={{ width: '70%' }} />
             </div>
 
-            {/* --- CAMPOS CONDICIONAIS --- */}
-            {isSpecialist ? (
-              // Se for ESPECIALISTA mostra estes:
-              <>
-                <input type="text" name="crmFono" placeholder="CRFA (Registro)" value={formData.crmFono} onChange={handleChange} required />
-                <input type="text" name="especialidade" placeholder="Especialidade (Ex: Voz, Audiologia)" value={formData.especialidade} onChange={handleChange} required />
-              </>
-            ) : (
-              // Se for CLIENTE mostra este:
-              <input type="text" name="nivel" placeholder="Nível (Ex: Iniciante)" value={formData.nivel} onChange={handleChange} required />
+            {/* Campos Específicos */}
+            {userType === 'CLIENTE' && (
+               <input type="text" name="nivel" placeholder="Nível (Ex: Iniciante)" value={formData.nivel} onChange={handleChange} required />
             )}
 
-            <input type="email" name="login" placeholder="Email (Login)" value={formData.login} onChange={handleChange} required />
+            {userType === 'ESPECIALISTA' && (
+               <>
+                <input type="text" name="crmFono" placeholder="CRFA" value={formData.crmFono} onChange={handleChange} required />
+                <input type="text" name="especialidade" placeholder="Especialidade" value={formData.especialidade} onChange={handleChange} required />
+               </>
+            )}
+
+            {userType === 'SECRETARIA' && (
+               <input type="email" name="email" placeholder="Email de Contato Profissional" value={formData.email} onChange={handleChange} required />
+            )}
+
+            {/* Login e Senha (Sempre necessários) */}
+            <hr style={{borderColor: '#444', margin: '15px 0'}} />
+            <input type="email" name="login" placeholder="Login (Email de Acesso)" value={formData.login} onChange={handleChange} required />
             <input type="password" name="senha" placeholder="Senha" value={formData.senha} onChange={handleChange} required />
 
             <button type="submit" className="login-button" disabled={isLoading}>
